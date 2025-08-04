@@ -9,7 +9,7 @@
   "version": "1.18.1",
   "updater": {
     "version": "1.18.1",
-    "releaseNotes": "-- Implements new async_track_state_change_event",
+    "releaseNotes": "-- Implements new async_track_state_change_event\n-- Adds ZHA controller support",
     "files": [
       "__init__.py",
       "climate.py",
