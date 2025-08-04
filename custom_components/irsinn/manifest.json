@@ -1,9 +1,9 @@
 {
-  "domain": "smartir",
-  "name": "SmartIR",
-  "documentation": "https://github.com/smartHomeHub/SmartIR",
+  "domain": "irsinn",
+  "name": "IRsinn",
+  "documentation": "https://github.com/sKuhLight/IRsinn",
   "dependencies": [],
-  "codeowners": ["@smartHomeHub"],
+  "codeowners": ["@sKuhLight"],
   "requirements": ["aiofiles>=0.6.0"],
   "homeassistant": "2025.5.0",
   "version": "1.19.0",

@@ -1,8 +1,5 @@
 import asyncio
-import aiofiles
-import json
 import logging
-import os.path
 
 import voluptuous as vol
 
@@ -11,20 +8,26 @@ from homeassistant.components.fan import (
     PLATFORM_SCHEMA, DIRECTION_REVERSE, DIRECTION_FORWARD)
 from homeassistant.const import (
     CONF_NAME, STATE_OFF, STATE_ON, STATE_UNKNOWN)
-from homeassistant.core import Event, EventStateChangedData, callback
-from homeassistant.helpers.event import async_track_state_change, async_track_state_change_event
+from homeassistant.core import Event, EventStateChangedData, HomeAssistant, callback
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.event import (
+    async_track_state_change,
+    async_track_state_change_event,
+)
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.restore_state import RestoreEntity
+from homeassistant.helpers.typing import ConfigType
 from homeassistant.util.percentage import (
     ordered_list_item_to_percentage,
-    percentage_to_ordered_list_item
+    percentage_to_ordered_list_item,
 )
-from . import COMPONENT_ABS_DIR, Helper
+
+from . import async_get_device_config
 from .controller import get_controller
 
 _LOGGER = logging.getLogger(__name__)
 
-DEFAULT_NAME = "SmartIR Fan"
+DEFAULT_NAME = "IRsinn Fan"
 DEFAULT_DELAY = 0.5
 
 CONF_UNIQUE_ID = 'unique_id'
@@ -44,50 +47,24 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_POWER_SENSOR): cv.entity_id
 })
 
-async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
+async def async_setup_platform(
+    hass: HomeAssistant,
+    config: ConfigType,
+    async_add_entities: AddEntitiesCallback,
+    discovery_info: dict | None = None,
+) -> None:
     """Set up the IR Fan platform."""
     device_code = config.get(CONF_DEVICE_CODE)
-    device_files_subdir = os.path.join('codes', 'fan')
-    device_files_absdir = os.path.join(COMPONENT_ABS_DIR, device_files_subdir)
-
-    if not os.path.isdir(device_files_absdir):
-        os.makedirs(device_files_absdir)
-
-    device_json_filename = str(device_code) + '.json'
-    device_json_path = os.path.join(device_files_absdir, device_json_filename)
-
-    if not os.path.exists(device_json_path):
-        _LOGGER.warning("Couldn't find the device Json file. The component will " \
-                        "try to download it from the GitHub repo.")
-
-        try:
-            codes_source = ("https://raw.githubusercontent.com/"
-                            "smartHomeHub/SmartIR/master/"
-                            "codes/fan/{}.json")
-
-            await Helper.downloader(codes_source.format(device_code), device_json_path)
-        except Exception:
-            _LOGGER.error("There was an error while downloading the device Json file. " \
-                          "Please check your internet connection or if the device code " \
-                          "exists on GitHub. If the problem still exists please " \
-                          "place the file manually in the proper directory.")
-            return
 
     try:
-        async with aiofiles.open(device_json_path, mode='r') as j:
-            _LOGGER.debug(f"loading json file {device_json_path}")
-            content = await j.read()
-            device_data = json.loads(content)
-            _LOGGER.debug(f"{device_json_path} file loaded")
+        device_data = await async_get_device_config("fan", device_code)
     except Exception:
         _LOGGER.error("The device JSON file is invalid")
         return
 
-    async_add_entities([SmartIRFan(
-        hass, config, device_data
-    )])
+    async_add_entities([IRsinnFan(hass, config, device_data)])
 
-class SmartIRFan(FanEntity, RestoreEntity):
+class IRsinnFan(FanEntity, RestoreEntity):
     def __init__(self, hass, config, device_data):
         self.hass = hass
         self._unique_id = config.get(CONF_UNIQUE_ID)

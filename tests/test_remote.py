@@ -4,7 +4,7 @@ import sys
 import pytest
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "custom_components"))
-from smartir.remote import SmartIRRemote
+from irsinn.remote import IRsinnRemote
 
 
 class DummyController:
@@ -38,11 +38,11 @@ async def test_send_and_power(monkeypatch):
 
     dummy = DummyController()
     monkeypatch.setattr(
-        "smartir.remote.get_controller",
+        "irsinn.remote.get_controller",
         lambda *args, **kwargs: dummy,
     )
 
-    entity = SmartIRRemote(hass, config, device_data)
+    entity = IRsinnRemote(hass, config, device_data)
 
     # Avoid Home Assistant state machine requirements in tests
     entity.async_write_ha_state = lambda: None

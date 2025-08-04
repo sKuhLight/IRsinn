@@ -1,9 +1,9 @@
 <p align="center">
-  <a href="#"><img src="assets/smartir_mediaplayer.png" width="350" alt="SmartIR Media Player"></a>
+  <a href="#"><img src="assets/irsinn_mediaplayer.png" width="350" alt="IRsinn Media Player"></a>
 </p>
 
 For this platform to work, we need a .json file containing all the necessary IR commands.
-Find your device's brand code [here](MEDIA_PLAYER.md#available-codes-for-tv-devices) and add the number in the `device_code` field. The component will download it to the correct folder. If your device is not working, you will need to learn your own codes and place the .json file in `smartir/codes/media_player/` subfolders. Please note that the `device_code` field only accepts positive numbers. The .json extension is not required.
+Find your device's brand code [here](MEDIA_PLAYER.md#available-codes-for-tv-devices) and add the number in the `device_code` field. The component will download it to the correct folder. If your device is not working, you will need to learn your own codes and place the .json file in `irsinn/codes/media_player/` subfolders. Please note that the `device_code` field only accepts positive numbers. The .json extension is not required.
 
 ## Configuration variables:
 **name** (Optional): The name of the device<br />
@@ -18,10 +18,10 @@ Find your device's brand code [here](MEDIA_PLAYER.md#available-codes-for-tv-devi
 Add a Broadlink RM device named "Bedroom" via config flow (read the [docs](https://www.home-assistant.io/integrations/broadlink/)).
 
 ```yaml
-smartir:
+irsinn:
 
 media_player:
-  - platform: smartir
+  - platform: irsinn
     name: Living room TV
     unique_id: living_room_tv
     device_code: 1000
@@ -31,7 +31,7 @@ media_player:
 
 ## Example (using xiaomi controller):
 ```yaml
-smartir:
+irsinn:
 
 remote:
   - platform: xiaomi_miio
@@ -39,7 +39,7 @@ remote:
     token: YOUR_TOKEN
     
 media_player:
-  - platform: smartir
+  - platform: irsinn
     name: Living room TV
     unique_id: living_room_tv
     device_code: 2000
@@ -49,10 +49,10 @@ media_player:
 
 ## Example (using mqtt controller):
 ```yaml
-smartir:
+irsinn:
 
 media_player:
-  - platform: smartir
+  - platform: irsinn
     name: Living room TV
     unique_id: living_room_tv
     device_code: 3000
@@ -62,10 +62,10 @@ media_player:
 
 ## Example (using LOOKin controller):
 ```yaml
-smartir:
+irsinn:
 
 media_player:
-  - platform: smartir
+  - platform: irsinn
     name: Living room TV
     unique_id: living_room_tv
     device_code: 4000
@@ -96,10 +96,10 @@ remote_transmitter:
 ```
 HA configuration.yaml:
 ```yaml
-smartir:
+irsinn:
 
 media_player:
-  - platform: smartir
+  - platform: irsinn
     name: Living room TV
     unique_id: living_room_tv
     device_code: 2000
@@ -112,7 +112,7 @@ Source names in device files are usually set to the name that the media player u
 
 ```yaml
 media_player:
-  - platform: smartir
+  - platform: irsinn
     name: Living room TV
     unique_id: living_room_tv
     device_code: 1000
@@ -124,7 +124,7 @@ media_player:
 ```
 
 ### Changing channels
-Most IR remotes can only send one key at a time (0 to 9) to change your TV channel, changing to other channels requires pressing 2 consecutive keys. SmartIR handles any channel for you with the standard Home Assistant service interface. Here is an example that changes your Kitchen TV to channel 51:
+Most IR remotes can only send one key at a time (0 to 9) to change your TV channel, changing to other channels requires pressing 2 consecutive keys. IRsinn handles any channel for you with the standard Home Assistant service interface. Here is an example that changes your Kitchen TV to channel 51:
 
 ```yaml
 service: media_player.play_media

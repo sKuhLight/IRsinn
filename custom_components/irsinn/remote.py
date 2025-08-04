@@ -1,26 +1,22 @@
 import asyncio
-import aiofiles
-import json
 import logging
-import os.path
 
 import voluptuous as vol
 
-from homeassistant.components.remote import (
-    RemoteEntity,
-    PLATFORM_SCHEMA,
-    RemoteEntityFeature,
-)
+from homeassistant.components.remote import RemoteEntity, PLATFORM_SCHEMA, RemoteEntityFeature
 from homeassistant.const import CONF_NAME
 import homeassistant.helpers.config_validation as cv
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
+from homeassistant.helpers.typing import ConfigType
 
-from . import COMPONENT_ABS_DIR, Helper
+from . import async_get_device_config
 from .controller import get_controller
 
 _LOGGER = logging.getLogger(__name__)
 
-DEFAULT_NAME = "SmartIR Remote"
+DEFAULT_NAME = "IRsinn Remote"
 DEFAULT_DELAY = 0.5
 
 CONF_UNIQUE_ID = "unique_id"
@@ -43,53 +39,25 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
 )
 
 
-async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
+async def async_setup_platform(
+    hass: HomeAssistant,
+    config: ConfigType,
+    async_add_entities: AddEntitiesCallback,
+    discovery_info: dict | None = None,
+) -> None:
     """Set up the IR Remote platform."""
     device_code = config.get(CONF_DEVICE_CODE)
-    device_files_subdir = os.path.join("codes", "remote")
-    device_files_absdir = os.path.join(COMPONENT_ABS_DIR, device_files_subdir)
-
-    if not os.path.isdir(device_files_absdir):
-        os.makedirs(device_files_absdir)
-
-    device_json_filename = str(device_code) + ".json"
-    device_json_path = os.path.join(device_files_absdir, device_json_filename)
-
-    if not os.path.exists(device_json_path):
-        _LOGGER.warning(
-            "Couldn't find the device Json file. The component will try to download it from the GitHub repo."
-        )
-        try:
-            codes_source = (
-                "https://raw.githubusercontent.com/"
-                "smartHomeHub/SmartIR/master/"
-                "codes/remote/{}.json"
-            )
-            await Helper.downloader(codes_source.format(device_code), device_json_path)
-        except Exception:
-            _LOGGER.error(
-                "There was an error while downloading the device Json file. Please check your internet connection or if the device code exists on GitHub. If the problem still exists please place the file manually in the proper directory."
-            )
-            return
 
     try:
-        async with aiofiles.open(device_json_path, mode="r") as j:
-            content = await j.read()
-            device_data = json.loads(content)
+        device_data = await async_get_device_config("remote", device_code)
     except Exception:
         _LOGGER.error("The device JSON file is invalid")
         return
 
-    async_add_entities([
-        SmartIRRemote(
-            hass,
-            config,
-            device_data,
-        )
-    ])
+    async_add_entities([IRsinnRemote(hass, config, device_data)])
 
 
-class SmartIRRemote(RemoteEntity, RestoreEntity):
+class IRsinnRemote(RemoteEntity, RestoreEntity):
     def __init__(self, hass, config, device_data):
         self.hass = hass
         self._unique_id = config.get(CONF_UNIQUE_ID)
@@ -133,7 +101,7 @@ class SmartIRRemote(RemoteEntity, RestoreEntity):
     @property
     def device_info(self):
         return {
-            "identifiers": {("smartir", self._unique_id or self._device_code)},
+            "identifiers": {("irsinn", self._unique_id or self._device_code)},
             "name": self._name,
             "manufacturer": self._manufacturer,
             "model": ", ".join(self._supported_models) if self._supported_models else None,

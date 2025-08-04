@@ -1,15 +1,15 @@
-[![](https://img.shields.io/github/v/release/smartHomeHub/SmartIR.svg?style=flat-square)](https://github.com/smartHomeHub/SmartIR/releases/latest) [![](https://img.shields.io/badge/HACS-Custom-orange.svg?style=flat-square)](https://github.com/custom-components/hacs)
+[![](https://img.shields.io/github/v/release/sKuhLight/IRsinn.svg?style=flat-square)](https://github.com/sKuhLight/IRsinn/releases/latest) [![](https://img.shields.io/badge/HACS-Custom-orange.svg?style=flat-square)](https://github.com/custom-components/hacs)
 
 > ### ⚠️ Warning  
 > You are free to fork, modify, and use the code in this repository in accordance with the applicable open-source license.  
 >  
-> **However, the name "SmartIR" must not be used in any capacity**, especially for promoting, rebranding, or distributing your own fork or derivative works.  
+> **However, the name "IRsinn" must not be used in any capacity**, especially for promoting, rebranding, or distributing your own fork or derivative works.  
 >  
 > Please respect this guideline to preserve the original project's identity.
 
 ## Overview
-SmartIR is a custom integration for controlling **climate devices**, **media players**, **fans**, **lights** and **generic remotes** via infrared controllers.<br>
-SmartIR currently supports the following controllers:
+IRsinn is a custom integration for controlling **climate devices**, **media players**, **fans**, **lights** and **generic remotes** via infrared controllers.<br>
+IRsinn currently supports the following controllers:
 * [Broadlink](https://www.home-assistant.io/integrations/broadlink/)
 * [Xiaomi IR Remote (ChuangmiIr)](https://www.home-assistant.io/integrations/remote.xiaomi_miio/)
 * [LOOK.in Remote](http://look-in.club/devices/remote)
@@ -27,7 +27,7 @@ It should look similar to this:
 ```
 <config directory>/
 |-- custom_components/
-|   |-- smartir/
+|   |-- irsinn/
 |       |-- __init__.py
 |       |-- climate.py
 |       |-- fan.py
@@ -38,25 +38,25 @@ It should look similar to this:
 ```
 **(2)** Add the following to your configuration.yaml file.
 ```yaml
-smartir:
+irsinn:
 ```
 
-SmartIR automatically detects updates after each HA startup and asks you to install them. It also has a mechanism that prevents you from updating if the last SmartIR version is incompatible with your HA instance. You can disable this feature by setting SmartIR as follows:
+IRsinn automatically detects updates after each HA startup and asks you to install them. It also has a mechanism that prevents you from updating if the last IRsinn version is incompatible with your HA instance. You can disable this feature by setting IRsinn as follows:
 ```yaml
-smartir:
+irsinn:
   check_updates: false
 ```
 
-If you would like to get updates from the rc branch (Release Candidate), configure SmartIR as follows:
+If you would like to get updates from the rc branch (Release Candidate), configure IRsinn as follows:
 ```yaml
-smartir:
+irsinn:
   update_branch: rc
 ```
 
 **(3)** Configure a platform.
 
 ### *HACS*
-If you want HACS to handle installation and updates, add SmartIR as a [custom repository](https://hacs.xyz/docs/faq/custom_repositories/). In this case, it is recommended that you turn off automatic updates, as above.
+If you want HACS to handle installation and updates, add IRsinn as a [custom repository](https://hacs.xyz/docs/faq/custom_repositories/). In this case, it is recommended that you turn off automatic updates, as above.
 <br><br>
 
 
@@ -71,7 +71,7 @@ Click on the links below for instructions on how to configure each platform.
 
 ### Example remote configuration
 ```yaml
-- platform: smartir
+- platform: irsinn
   name: Living Room IR Remote
   unique_id: lr_remote
   device_code: 1000
@@ -82,4 +82,4 @@ Supported services: `remote.send_command`, `remote.learn_command`, `remote.delet
 <br><br>
 
 ## See also
-* [Discussion about SmartIR Climate (Home Assistant Community)](https://community.home-assistant.io/t/smartir-control-your-climate-tv-and-fan-devices-via-ir-rf-controllers/)
+* [Discussion about IRsinn Climate (Home Assistant Community)](https://community.home-assistant.io/t/irsinn-control-your-climate-tv-and-fan-devices-via-ir-rf-controllers/)
