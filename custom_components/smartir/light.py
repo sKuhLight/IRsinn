@@ -1,8 +1,5 @@
 import asyncio
-import aiofiles
-import json
 import logging
-import os.path
 
 import voluptuous as vol
 
@@ -18,11 +15,14 @@ from homeassistant.const import (
     STATE_OFF,
     STATE_ON,
 )
-from homeassistant.core import callback
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_track_state_change_event
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.restore_state import RestoreEntity
-from . import COMPONENT_ABS_DIR, Helper
+from homeassistant.helpers.typing import ConfigType
+
+from . import async_get_device_config
 from .controller import get_controller
 
 _LOGGER = logging.getLogger(__name__)
@@ -57,54 +57,16 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
 
 
 async def async_setup_platform(
-    hass,
-    config,
-    async_add_entities,
-    discovery_info=None,
-):
+    hass: HomeAssistant,
+    config: ConfigType,
+    async_add_entities: AddEntitiesCallback,
+    discovery_info: dict | None = None,
+) -> None:
     """Set up the IR Light platform."""
     device_code = config.get(CONF_DEVICE_CODE)
-    device_files_subdir = os.path.join("codes", "light")
-    device_files_absdir = os.path.join(COMPONENT_ABS_DIR, device_files_subdir)
-
-    if not os.path.isdir(device_files_absdir):
-        os.makedirs(device_files_absdir)
-
-    device_json_filename = str(device_code) + ".json"
-    device_json_path = os.path.join(device_files_absdir, device_json_filename)
-
-    if not os.path.exists(device_json_path):
-        _LOGGER.warning(
-            "Couldn't find the device Json file. The component "
-            "will try to download it from the Github repo."
-        )
-
-        try:
-            codes_source = (
-                "https://raw.githubusercontent.com/"
-                "smartHomeHub/SmartIR/master/"
-                "codes/light/{}.json"
-            )
-
-            await Helper.downloader(
-                codes_source.format(device_code),
-                device_json_path,
-            )
-        except Exception:
-            _LOGGER.error(
-                "There was an error while downloading the device Json file. "
-                "Please check your internet connection or if the device code "
-                "exists on GitHub. If the problem still exists please "
-                "place the file manually in the proper directory."
-            )
-            return
 
     try:
-        async with aiofiles.open(device_json_path, mode='r') as j:
-            _LOGGER.debug(f"loading json file {device_json_path}")
-            content = await j.read()
-            device_data = json.loads(content)
-            _LOGGER.debug(f"{device_json_path} file loaded")
+        device_data = await async_get_device_config("light", device_code)
     except Exception:
         _LOGGER.error("The device JSON file is invalid")
         return

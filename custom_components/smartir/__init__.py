@@ -1,18 +1,20 @@
+"""SmartIR component helpers and setup."""
+
+from __future__ import annotations
+
 import aiofiles
 import aiohttp
-import asyncio
 import binascii
 from distutils.version import StrictVersion
 import json
 import logging
 import os.path
-import requests
 import struct
-import voluptuous as vol
+from typing import Any
 
-from aiohttp import ClientSession
-from homeassistant.const import (
-    ATTR_FRIENDLY_NAME, __version__ as current_ha_version)
+import voluptuous as vol
+from homeassistant.const import __version__ as current_ha_version
+from homeassistant.core import HomeAssistant
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.typing import ConfigType
 
@@ -34,15 +36,22 @@ COMPONENT_ABS_DIR = os.path.dirname(
 CONF_CHECK_UPDATES = 'check_updates'
 CONF_UPDATE_BRANCH = 'update_branch'
 
-CONFIG_SCHEMA = vol.Schema({
-    DOMAIN: vol.Schema({
-        vol.Optional(CONF_CHECK_UPDATES, default=True): cv.boolean,
-        vol.Optional(CONF_UPDATE_BRANCH, default='master'): vol.In(
-            ['master', 'rc'])
-    })
-}, extra=vol.ALLOW_EXTRA)
+CONFIG_SCHEMA = vol.Schema(
+    {
+        DOMAIN: vol.Schema(
+            {
+                vol.Optional(CONF_CHECK_UPDATES, default=True): cv.boolean,
+                vol.Optional(CONF_UPDATE_BRANCH, default="master"): vol.In(
+                    ["master", "rc"]
+                ),
+            }
+        )
+    },
+    extra=vol.ALLOW_EXTRA,
+)
 
-async def async_setup(hass, config):
+
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up the SmartIR component."""
     conf = config.get(DOMAIN)
 
@@ -66,77 +75,131 @@ async def async_setup(hass, config):
 
     return True
 
-async def _update(hass, branch, do_update=False, notify_if_latest=True):
+
+async def async_get_device_config(domain: str, device_code: int) -> dict[str, Any]:
+    """Load the device configuration for the given domain and code."""
+    device_files_subdir = os.path.join("codes", domain)
+    device_files_absdir = os.path.join(COMPONENT_ABS_DIR, device_files_subdir)
+    os.makedirs(device_files_absdir, exist_ok=True)
+
+    device_json_path = os.path.join(
+        device_files_absdir, f"{device_code}.json"
+    )
+
+    if not os.path.exists(device_json_path):
+        _LOGGER.warning(
+            "Couldn't find the device Json file. The component will try to download it from the GitHub repo."
+        )
+        codes_source = (
+            "https://raw.githubusercontent.com/"
+            "smartHomeHub/SmartIR/master/"
+            f"codes/{domain}/{device_code}.json"
+        )
+        try:
+            await Helper.downloader(codes_source, device_json_path)
+        except Exception as exc:
+            _LOGGER.error(
+                "There was an error while downloading the device Json file.",
+                exc_info=exc,
+            )
+            raise
+
+    async with aiofiles.open(device_json_path, mode="r") as file:
+        return json.loads(await file.read())
+
+
+async def _update(
+    hass: HomeAssistant,
+    branch: str,
+    do_update: bool = False,
+    notify_if_latest: bool = True,
+) -> None:
+    """Check for and optionally perform component updates."""
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(MANIFEST_URL.format(branch)) as response:
-                if response.status == 200:
-                    
-                    data = await response.json(content_type='text/plain')
-                    min_ha_version = data['homeassistant']
-                    last_version = data['updater']['version']
-                    release_notes = data['updater']['releaseNotes']
+                if response.status != 200:
+                    return
 
-                    if StrictVersion(last_version) <= StrictVersion(VERSION):
-                        if notify_if_latest:
-                            hass.components.persistent_notification.async_create(
-                                "You're already using the latest version!", 
-                                title='SmartIR')
-                        return
+                data = await response.json(content_type="text/plain")
+                min_ha_version = data["homeassistant"]
+                last_version = data["updater"]["version"]
+                release_notes = data["updater"]["releaseNotes"]
 
-                    if StrictVersion(current_ha_version) < StrictVersion(min_ha_version):
+                if StrictVersion(last_version) <= StrictVersion(VERSION):
+                    if notify_if_latest:
                         hass.components.persistent_notification.async_create(
-                            "There is a new version of SmartIR integration, but it is **incompatible** "
-                            "with your system. Please first update Home Assistant.", title='SmartIR')
-                        return
+                            "You're already using the latest version!", title="SmartIR"
+                        )
+                    return
 
-                    if do_update is False:
-                        hass.components.persistent_notification.async_create(
-                            "A new version of SmartIR integration is available ({}). "
-                            "Call the ``smartir.update_component`` service to update "
-                            "the integration. \n\n **Release notes:** \n{}"
-                            .format(last_version, release_notes), title='SmartIR')
-                        return
+                if StrictVersion(current_ha_version) < StrictVersion(min_ha_version):
+                    hass.components.persistent_notification.async_create(
+                        "There is a new version of SmartIR integration, but it is **incompatible** "
+                        "with your system. Please first update Home Assistant.",
+                        title="SmartIR",
+                    )
+                    return
 
-                    # Begin update
-                    files = data['updater']['files']
-                    has_errors = False
+                if not do_update:
+                    hass.components.persistent_notification.async_create(
+                        "A new version of SmartIR integration is available ({}). "
+                        "Call the ``smartir.update_component`` service to update "
+                        "the integration. \n\n **Release notes:** \n{}".format(
+                            last_version, release_notes
+                        ),
+                        title="SmartIR",
+                    )
+                    return
 
-                    for file in files:
-                        try:
-                            source = REMOTE_BASE_URL.format(branch) + file
-                            dest = os.path.join(COMPONENT_ABS_DIR, file)
-                            os.makedirs(os.path.dirname(dest), exist_ok=True)
-                            await Helper.downloader(source, dest)
-                        except Exception:
-                            has_errors = True
-                            _LOGGER.error("Error updating %s. Please update the file manually.", file)
+                files = data["updater"]["files"]
+                has_errors = False
 
-                    if has_errors:
-                        hass.components.persistent_notification.async_create(
-                            "There was an error updating one or more files of SmartIR. "
-                            "Please check the logs for more information.", title='SmartIR')
-                    else:
-                        hass.components.persistent_notification.async_create(
-                            "Successfully updated to {}. Please restart Home Assistant."
-                            .format(last_version), title='SmartIR')
+                for file in files:
+                    try:
+                        source = REMOTE_BASE_URL.format(branch) + file
+                        dest = os.path.join(COMPONENT_ABS_DIR, file)
+                        os.makedirs(os.path.dirname(dest), exist_ok=True)
+                        await Helper.downloader(source, dest)
+                    except Exception:
+                        has_errors = True
+                        _LOGGER.error(
+                            "Error updating %s. Please update the file manually.", file
+                        )
+
+                if has_errors:
+                    hass.components.persistent_notification.async_create(
+                        "There was an error updating one or more files of SmartIR. "
+                        "Please check the logs for more information.",
+                        title="SmartIR",
+                    )
+                else:
+                    hass.components.persistent_notification.async_create(
+                        "Successfully updated to {}. Please restart Home Assistant.".format(
+                            last_version
+                        ),
+                        title="SmartIR",
+                    )
     except Exception:
-       _LOGGER.error("An error occurred while checking for updates.")
+        _LOGGER.error("An error occurred while checking for updates.")
 
-class Helper():
+class Helper:
+    """Collection of helper methods for IR code manipulation."""
+
     @staticmethod
-    async def downloader(source, dest):
+    async def downloader(source: str, dest: str) -> None:
+        """Download a file from ``source`` to ``dest`` asynchronously."""
         async with aiohttp.ClientSession() as session:
             async with session.get(source) as response:
-                if response.status == 200:
-                    async with aiofiles.open(dest, mode='wb') as f:
-                        await f.write(await response.read())
-                else:
-                    raise Exception("File not found")
+                if response.status != 200:
+                    raise FileNotFoundError(source)
+                async with aiofiles.open(dest, mode="wb") as file:
+                    await file.write(await response.read())
 
     @staticmethod
-    def pronto2lirc(pronto):
-        codes = [int(binascii.hexlify(pronto[i:i+2]), 16) for i in range(0, len(pronto), 2)]
+    def pronto2lirc(pronto: bytes) -> list[int]:
+        """Convert a Pronto code to a list of LIRC pulse widths."""
+        codes = [int(binascii.hexlify(pronto[i : i + 2]), 16) for i in range(0, len(pronto), 2)]
 
         if codes[0]:
             raise ValueError("Pronto code should start with 0000")
@@ -147,24 +210,23 @@ class Helper():
         return [int(round(code / frequency)) for code in codes[4:]]
 
     @staticmethod
-    def lirc2broadlink(pulses):
+    def lirc2broadlink(pulses: list[int]) -> bytearray:
+        """Convert LIRC pulses to Broadlink packet format."""
         array = bytearray()
-
         for pulse in pulses:
             pulse = int(pulse * 269 / 8192)
-
             if pulse < 256:
-                array += bytearray(struct.pack('>B', pulse))
+                array += bytearray(struct.pack(">B", pulse))
             else:
                 array += bytearray([0x00])
-                array += bytearray(struct.pack('>H', pulse))
+                array += bytearray(struct.pack(">H", pulse))
 
         packet = bytearray([0x26, 0x00])
-        packet += bytearray(struct.pack('<H', len(array)))
+        packet += bytearray(struct.pack("<H", len(array)))
         packet += array
-        packet += bytearray([0x0d, 0x05])
+        packet += bytearray([0x0D, 0x05])
 
-        # Add 0s to make ultimate packet size a multiple of 16 for 128-bit AES encryption.
+        # Pad packet size to multiple of 16 bytes for 128-bit AES encryption.
         remainder = (len(packet) + 4) % 16
         if remainder:
             packet += bytearray(16 - remainder)
