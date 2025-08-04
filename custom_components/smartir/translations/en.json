@@ -1,0 +1,9 @@
+{
+  "entity": {
+    "remote": {
+      "smartir": {
+        "name": "SmartIR Remote"
+      }
+    }
+  }
+}

@@ -8,7 +8,7 @@
 > Please respect this guideline to preserve the original project's identity.
 
 ## Overview
-SmartIR is a custom integration for controlling **climate devices**, **media players**, **fans** and **lights** via infrared controllers.<br>
+SmartIR is a custom integration for controlling **climate devices**, **media players**, **fans**, **lights** and **generic remotes** via infrared controllers.<br>
 SmartIR currently supports the following controllers:
 * [Broadlink](https://www.home-assistant.io/integrations/broadlink/)
 * [Xiaomi IR Remote (ChuangmiIr)](https://www.home-assistant.io/integrations/remote.xiaomi_miio/)
@@ -33,6 +33,7 @@ It should look similar to this:
 |       |-- fan.py
 |       |-- light.py
 |       |-- media_player.py
+|       |-- remote.py
 |       |-- etc...
 ```
 **(2)** Add the following to your configuration.yaml file.
@@ -65,6 +66,19 @@ Click on the links below for instructions on how to configure each platform.
 * [Media Player platform](/docs/MEDIA_PLAYER.md)
 * [Fan platform](/docs/FAN.md)
 * [Light platform](/docs/LIGHT.md)
+* [Remote platform](/docs/REMOTE.md)
+<br><br>
+
+### Example remote configuration
+```yaml
+- platform: smartir
+  name: Living Room IR Remote
+  unique_id: lr_remote
+  device_code: 1000
+```
+
+Supported services: `remote.send_command`, `remote.learn_command`, `remote.delete_command`.
+
 <br><br>
 
 ## See also

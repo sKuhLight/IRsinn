@@ -6,16 +6,17 @@
   "codeowners": ["@smartHomeHub"],
   "requirements": ["aiofiles>=0.6.0"],
   "homeassistant": "2025.5.0",
-  "version": "1.18.1",
+  "version": "1.19.0",
   "updater": {
-    "version": "1.18.1",
-    "releaseNotes": "-- Implements new async_track_state_change_event\n-- Adds ZHA controller support",
+    "version": "1.19.0",
+    "releaseNotes": "-- Adds remote platform support",
     "files": [
       "__init__.py",
       "climate.py",
       "media_player.py",
       "fan.py",
-      "light.py",  
+      "light.py",
+      "remote.py",
       "controller.py",
       "manifest.json",
       "services.yaml"

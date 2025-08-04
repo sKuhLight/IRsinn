@@ -1,0 +1,12 @@
+{
+  "manufacturer": "Generic",
+  "supportedModels": ["Demo Remote"],
+  "supportedController": "Broadlink",
+  "commandsEncoding": "Base64",
+  "commands": {
+    "turn_on": "on_cmd",
+    "turn_off": "off_cmd",
+    "volume_up": "vol_up_cmd",
+    "volume_down": "vol_down_cmd"
+  }
+}
