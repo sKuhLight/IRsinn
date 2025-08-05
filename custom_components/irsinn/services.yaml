@@ -2,3 +2,42 @@ check_updates:
   description: Check for IRsinn updates.
 update_component:
   description: Update IRsinn component.
+learn_command:
+  description: Learn an IR command and store it.
+  fields:
+    entity_id:
+      description: Target IRsinn remote entity.
+      example: remote.living_room
+    key:
+      description: Command name to store.
+      example: volume_up
+save_command:
+  description: Save an IR command.
+  fields:
+    entity_id:
+      description: Target IRsinn remote entity.
+      example: remote.living_room
+    key:
+      description: Command name.
+      example: power
+    code:
+      description: Base64 encoded IR command.
+      example: "aGVsbG8="
+delete_command:
+  description: Delete an IR command.
+  fields:
+    entity_id:
+      description: Target IRsinn remote entity.
+      example: remote.living_room
+    key:
+      description: Command name to delete.
+      example: power
+test_command:
+  description: Send a raw IR command without saving.
+  fields:
+    entity_id:
+      description: Target IRsinn remote entity.
+      example: remote.living_room
+    code:
+      description: Base64 encoded IR command to send.
+      example: "aGVsbG8="

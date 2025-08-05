@@ -4,15 +4,23 @@ import sys
 import pytest
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "custom_components"))
-from irsinn.remote import IRsinnRemote
+from irsinn.remote import IRsinnRemote, CONF_BACKEND
 
 
-class DummyController:
+class DummyBackend:
     def __init__(self):
         self.sent = []
 
-    async def send(self, command):
+    async def async_send(self, command):
         self.sent.append(command)
+
+
+class DummyStorage:
+    async def async_save_command(self, *args, **kwargs):
+        return None
+
+    async def async_delete_command(self, *args, **kwargs):
+        return None
 
 
 @pytest.mark.asyncio
@@ -23,6 +31,7 @@ async def test_send_and_power(monkeypatch):
         "device_code": 1000,
         "controller_data": "dummy",
         "delay": 0,
+        CONF_BACKEND: "dummy",
     }
     device_data = {
         "manufacturer": "Generic",
@@ -36,13 +45,10 @@ async def test_send_and_power(monkeypatch):
         },
     }
 
-    dummy = DummyController()
-    monkeypatch.setattr(
-        "irsinn.remote.get_controller",
-        lambda *args, **kwargs: dummy,
-    )
+    dummy = DummyBackend()
+    storage = DummyStorage()
 
-    entity = IRsinnRemote(hass, config, device_data)
+    entity = IRsinnRemote(hass, config, device_data, dummy, storage)
 
     # Avoid Home Assistant state machine requirements in tests
     entity.async_write_ha_state = lambda: None

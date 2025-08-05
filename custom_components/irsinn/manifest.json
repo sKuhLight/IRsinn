@@ -6,6 +6,7 @@
   "codeowners": ["@sKuhLight"],
   "requirements": ["aiofiles>=0.6.0"],
   "homeassistant": "2025.5.0",
+  "config_flow": true,
   "version": "1.19.0",
   "updater": {
     "version": "1.19.0",

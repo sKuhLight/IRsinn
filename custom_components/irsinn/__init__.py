@@ -14,9 +14,11 @@ from typing import Any
 
 import voluptuous as vol
 from homeassistant.const import __version__ as current_ha_version
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, ServiceCall
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.typing import ConfigType
+
+from .storage_manager import StorageManager
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -35,6 +37,9 @@ COMPONENT_ABS_DIR = os.path.dirname(
 
 CONF_CHECK_UPDATES = 'check_updates'
 CONF_UPDATE_BRANCH = 'update_branch'
+CONF_ENTITY_TYPE = 'entity_type'
+
+PLATFORMS = ["remote", "climate", "fan", "light", "media_player"]
 
 CONFIG_SCHEMA = vol.Schema(
     {
@@ -53,13 +58,17 @@ CONFIG_SCHEMA = vol.Schema(
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up the IRsinn component."""
+    hass.data.setdefault(DOMAIN, {})
+    hass.data[DOMAIN]["storage"] = StorageManager(hass)
+    hass.data[DOMAIN]["entities"] = {}
+
     conf = config.get(DOMAIN)
 
     if conf is None:
-        return True
+        conf = {}
 
-    check_updates = conf[CONF_CHECK_UPDATES]
-    update_branch = conf[CONF_UPDATE_BRANCH]
+    check_updates = conf.get(CONF_CHECK_UPDATES, True)
+    update_branch = conf.get(CONF_UPDATE_BRANCH, "master")
 
     async def _check_updates(service):
         await _update(hass, update_branch)
@@ -70,10 +79,78 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     hass.services.async_register(DOMAIN, 'check_updates', _check_updates)
     hass.services.async_register(DOMAIN, 'update_component', _update_component)
 
+    async def _learn_command(call: ServiceCall):
+        entity = hass.data[DOMAIN]["entities"].get(call.data["entity_id"])
+        if entity:
+            await entity.async_learn_command(command=call.data.get("key"))
+
+    async def _save_command(call: ServiceCall):
+        entity = hass.data[DOMAIN]["entities"].get(call.data["entity_id"])
+        if entity:
+            entity._commands[call.data["key"]] = call.data["code"]
+            await entity._storage.async_save_command(
+                "remote", entity._device_code, call.data["key"], call.data["code"]
+            )
+
+    async def _delete_command(call: ServiceCall):
+        entity = hass.data[DOMAIN]["entities"].get(call.data["entity_id"])
+        if entity:
+            entity._commands.pop(call.data["key"], None)
+            await entity._storage.async_delete_command(
+                "remote", entity._device_code, call.data["key"]
+            )
+
+    async def _test_command(call: ServiceCall):
+        entity = hass.data[DOMAIN]["entities"].get(call.data["entity_id"])
+        if entity:
+            await entity._backend.async_send(call.data["code"])
+
+    hass.services.async_register(
+        DOMAIN,
+        "learn_command",
+        _learn_command,
+        schema=vol.Schema({"entity_id": cv.entity_id, "key": cv.string}),
+    )
+    hass.services.async_register(
+        DOMAIN,
+        "save_command",
+        _save_command,
+        schema=vol.Schema(
+            {"entity_id": cv.entity_id, "key": cv.string, "code": cv.string}
+        ),
+    )
+    hass.services.async_register(
+        DOMAIN,
+        "delete_command",
+        _delete_command,
+        schema=vol.Schema({"entity_id": cv.entity_id, "key": cv.string}),
+    )
+    hass.services.async_register(
+        DOMAIN,
+        "test_command",
+        _test_command,
+        schema=vol.Schema({"entity_id": cv.entity_id, "code": cv.string}),
+    )
+
     if check_updates:
         await _update(hass, update_branch, False, False)
 
     return True
+
+
+async def async_setup_entry(hass: HomeAssistant, entry) -> bool:
+    """Set up IRsinn from a config entry."""
+    hass.data.setdefault(DOMAIN, {})
+    hass.data[DOMAIN].setdefault("storage", StorageManager(hass))
+    hass.data[DOMAIN].setdefault("entities", {})
+    platform = entry.data.get(CONF_ENTITY_TYPE, "remote")
+    await hass.config_entries.async_forward_entry_setups(entry, [platform])
+    return True
+
+
+async def async_unload_entry(hass: HomeAssistant, entry) -> bool:
+    platform = entry.data.get(CONF_ENTITY_TYPE, "remote")
+    return await hass.config_entries.async_unload_platforms(entry, [platform])
 
 
 async def async_get_device_config(domain: str, device_code: int) -> dict[str, Any]:
