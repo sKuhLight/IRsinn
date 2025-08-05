@@ -207,6 +207,7 @@ class ZHAController(AbstractController):
                 "ieee": self._controller_data,
                 "cluster_id": 57348,
                 "attribute": 0,
+                "allow_cache": False,
             }
             try:
                 resp = await self.hass.services.async_call(
@@ -238,7 +239,8 @@ class ZHAController(AbstractController):
             "command": 1,
             "ieee": self._controller_data,
             "command_type": "server",
-            "params": {"on_off": True},
+            # quirk expects lowercase string values
+            "params": {"on_off": "true"},
             "cluster_id": 57348,
         }
         await self.hass.services.async_call(
@@ -250,11 +252,45 @@ class ZHAController(AbstractController):
         while time.monotonic() < end:
             await asyncio.sleep(1)
             code = await _read_code()
+            _LOGGER.debug("Polled learned code: %s", code)
             if code and code != initial_code:
                 _LOGGER.debug("Received new IR code: %s", code)
+                # exit learn mode
+                exit_data = {
+                    "cluster_type": "in",
+                    "endpoint_id": 1,
+                    "command": 0,
+                    "ieee": self._controller_data,
+                    "command_type": "server",
+                    "params": {"data": {"study": 1}},
+                    "cluster_id": 57348,
+                }
+                try:
+                    await self.hass.services.async_call(
+                        "zha", "issue_zigbee_cluster_command", exit_data
+                    )
+                except Exception as err:  # pragma: no cover - depends on HA
+                    _LOGGER.debug("Failed to exit learn mode: %s", err)
                 return code
 
         _LOGGER.debug("Timed out waiting for learned IR code")
+        # make a best effort to exit learn mode
+        try:
+            await self.hass.services.async_call(
+                "zha",
+                "issue_zigbee_cluster_command",
+                {
+                    "cluster_type": "in",
+                    "endpoint_id": 1,
+                    "command": 0,
+                    "ieee": self._controller_data,
+                    "command_type": "server",
+                    "params": {"data": {"study": 1}},
+                    "cluster_id": 57348,
+                },
+            )
+        except Exception as err:  # pragma: no cover - depends on HA
+            _LOGGER.debug("Failed to exit learn mode after timeout: %s", err)
         return None
 
 
