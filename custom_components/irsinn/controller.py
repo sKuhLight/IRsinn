@@ -13,8 +13,12 @@ from typing import Any, Iterable, List
 
 import requests
 
-from homeassistant.core import HomeAssistant
-from homeassistant.const import ATTR_ENTITY_ID
+try:  # pragma: no cover - allows tests without Home Assistant
+    from homeassistant.core import HomeAssistant
+    from homeassistant.const import ATTR_ENTITY_ID
+except Exception:  # pragma: no cover - Home Assistant not installed
+    HomeAssistant = Any  # type: ignore[misc, assignment]
+    ATTR_ENTITY_ID = "entity_id"
 
 from . import Helper
 

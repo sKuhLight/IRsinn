@@ -15,14 +15,20 @@ from typing import Any
 import voluptuous as vol
 
 try:  # pragma: no cover - falls back when HA is not installed
-    from homeassistant.const import __version__ as current_ha_version
+    from homeassistant.const import ATTR_ENTITY_ID, __version__ as current_ha_version
     from homeassistant.core import HomeAssistant
     import homeassistant.helpers.config_validation as cv
     from homeassistant.helpers.typing import ConfigType
 except Exception:  # pragma: no cover - used only for tests
     current_ha_version = "0.0.0"
+    ATTR_ENTITY_ID = "entity_id"  # type: ignore[misc, assignment]
     HomeAssistant = Any  # type: ignore[misc, assignment]
-    cv = ConfigType = Any  # type: ignore[misc]
+
+    class _CV:  # minimal stand-in for Home Assistant validators
+        boolean = bool
+
+    cv = _CV()
+    ConfigType = Any  # type: ignore[misc]
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -73,8 +79,32 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     async def _update_component(service):
         await _update(hass, update_branch, True)
 
-    hass.services.async_register(DOMAIN, 'check_updates', _check_updates)
-    hass.services.async_register(DOMAIN, 'update_component', _update_component)
+    async def _test_command(service: Any) -> None:
+        """Send a raw IR code for testing purposes."""
+        entity_id = service.data.get(ATTR_ENTITY_ID)
+        code = service.data.get("code")
+        entity = hass.data.get(DOMAIN, {}).get(entity_id)
+        if not entity:
+            _LOGGER.error("Entity %s not found for test_command", entity_id)
+            return
+        _LOGGER.debug("test_command called for %s", entity_id)
+        await entity._controller.send(code)
+
+    async def _learn_command(service: Any) -> None:
+        """Learn an IR command via a registered remote entity."""
+        entity_id = service.data.get(ATTR_ENTITY_ID)
+        key = service.data.get("key") or service.data.get("command")
+        entity = hass.data.get(DOMAIN, {}).get(entity_id)
+        if not entity:
+            _LOGGER.error("Entity %s not found for learn_command", entity_id)
+            return
+        _LOGGER.debug("learn_command called for %s with key %s", entity_id, key)
+        await entity.async_learn_command(command=key)
+
+    hass.services.async_register(DOMAIN, "check_updates", _check_updates)
+    hass.services.async_register(DOMAIN, "update_component", _update_component)
+    hass.services.async_register(DOMAIN, "test_command", _test_command)
+    hass.services.async_register(DOMAIN, "learn_command", _learn_command)
 
     if check_updates:
         await _update(hass, update_branch, False, False)

@@ -35,7 +35,7 @@ except Exception:  # pragma: no cover - Home Assistant not available
     cv = _CV()
     HomeAssistant = AddEntitiesCallback = ConfigType = Any
 
-from . import async_get_device_config
+from . import DOMAIN, async_get_device_config
 from .controller import get_controller
 
 _LOGGER = logging.getLogger(__name__)
@@ -105,6 +105,11 @@ class IRsinnRemote(RemoteEntity, RestoreEntity):
             self._controller_data,
             self._delay,
         )
+
+    async def async_added_to_hass(self) -> None:
+        """Register entity for domain services."""
+        await super().async_added_to_hass()
+        self.hass.data.setdefault(DOMAIN, {})[self.entity_id] = self
 
     @property
     def name(self):
