@@ -1,0 +1,4 @@
+check_updates:
+  description: Check for IRsinn updates.
+update_component:
+  description: Update IRsinn component.

@@ -1,4 +1,4 @@
-"""Generic controller abstractions for SmartIR."""
+"""Generic controller abstractions for IRsinn."""
 
 from __future__ import annotations
 

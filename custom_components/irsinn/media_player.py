@@ -17,7 +17,7 @@ from .controller import get_controller
 
 _LOGGER = logging.getLogger(__name__)
 
-DEFAULT_NAME = "SmartIR Media Player"
+DEFAULT_NAME = "IRsinn Media Player"
 DEFAULT_DEVICE_CLASS = "tv"
 DEFAULT_DELAY = 0.5
 
@@ -55,9 +55,9 @@ async def async_setup_platform(
         _LOGGER.error("The device JSON file is invalid")
         return
 
-    async_add_entities([SmartIRMediaPlayer(hass, config, device_data)])
+    async_add_entities([IRsinnMediaPlayer(hass, config, device_data)])
 
-class SmartIRMediaPlayer(MediaPlayerEntity, RestoreEntity):
+class IRsinnMediaPlayer(MediaPlayerEntity, RestoreEntity):
     def __init__(self, hass, config, device_data):
         self.hass = hass
         self._unique_id = config.get(CONF_UNIQUE_ID)

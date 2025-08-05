@@ -1,4 +1,4 @@
-"""SmartIR component helpers and setup."""
+"""IRsinn component helpers and setup."""
 
 from __future__ import annotations
 
@@ -20,16 +20,16 @@ from homeassistant.helpers.typing import ConfigType
 
 _LOGGER = logging.getLogger(__name__)
 
-DOMAIN = 'smartir'
+DOMAIN = 'irsinn'
 VERSION = '1.19.0'
 MANIFEST_URL = (
     "https://raw.githubusercontent.com/"
-    "smartHomeHub/SmartIR/{}/"
-    "custom_components/smartir/manifest.json")
+    "sKuhLight/IRsinn/{}/"
+    "custom_components/irsinn/manifest.json")
 REMOTE_BASE_URL = (
     "https://raw.githubusercontent.com/"
-    "smartHomeHub/SmartIR/{}/"
-    "custom_components/smartir/")
+    "sKuhLight/IRsinn/{}/"
+    "custom_components/irsinn/")
 COMPONENT_ABS_DIR = os.path.dirname(
     os.path.abspath(__file__))
 
@@ -52,7 +52,7 @@ CONFIG_SCHEMA = vol.Schema(
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    """Set up the SmartIR component."""
+    """Set up the IRsinn component."""
     conf = config.get(DOMAIN)
 
     if conf is None:
@@ -92,7 +92,7 @@ async def async_get_device_config(domain: str, device_code: int) -> dict[str, An
         )
         codes_source = (
             "https://raw.githubusercontent.com/"
-            "smartHomeHub/SmartIR/master/"
+            "sKuhLight/IRsinn/master/"
             f"codes/{domain}/{device_code}.json"
         )
         try:
@@ -129,26 +129,26 @@ async def _update(
                 if StrictVersion(last_version) <= StrictVersion(VERSION):
                     if notify_if_latest:
                         hass.components.persistent_notification.async_create(
-                            "You're already using the latest version!", title="SmartIR"
+                            "You're already using the latest version!", title="IRsinn"
                         )
                     return
 
                 if StrictVersion(current_ha_version) < StrictVersion(min_ha_version):
                     hass.components.persistent_notification.async_create(
-                        "There is a new version of SmartIR integration, but it is **incompatible** "
+                        "There is a new version of IRsinn integration, but it is **incompatible** "
                         "with your system. Please first update Home Assistant.",
-                        title="SmartIR",
+                        title="IRsinn",
                     )
                     return
 
                 if not do_update:
                     hass.components.persistent_notification.async_create(
-                        "A new version of SmartIR integration is available ({}). "
-                        "Call the ``smartir.update_component`` service to update "
+                        "A new version of IRsinn integration is available ({}). "
+                        "Call the ``irsinn.update_component`` service to update "
                         "the integration. \n\n **Release notes:** \n{}".format(
                             last_version, release_notes
                         ),
-                        title="SmartIR",
+                        title="IRsinn",
                     )
                     return
 
@@ -169,16 +169,16 @@ async def _update(
 
                 if has_errors:
                     hass.components.persistent_notification.async_create(
-                        "There was an error updating one or more files of SmartIR. "
+                        "There was an error updating one or more files of IRsinn. "
                         "Please check the logs for more information.",
-                        title="SmartIR",
+                        title="IRsinn",
                     )
                 else:
                     hass.components.persistent_notification.async_create(
                         "Successfully updated to {}. Please restart Home Assistant.".format(
                             last_version
                         ),
-                        title="SmartIR",
+                        title="IRsinn",
                     )
     except Exception:
         _LOGGER.error("An error occurred while checking for updates.")

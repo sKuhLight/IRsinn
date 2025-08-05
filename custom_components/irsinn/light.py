@@ -27,7 +27,7 @@ from .controller import get_controller
 
 _LOGGER = logging.getLogger(__name__)
 
-DEFAULT_NAME = "SmartIR Light"
+DEFAULT_NAME = "IRsinn Light"
 DEFAULT_DELAY = 0.5
 
 CONF_UNIQUE_ID = "unique_id"
@@ -71,7 +71,7 @@ async def async_setup_platform(
         _LOGGER.error("The device JSON file is invalid")
         return
 
-    async_add_entities([SmartIRLight(hass, config, device_data)])
+    async_add_entities([IRsinnLight(hass, config, device_data)])
 
 
 # find the closest match in a sorted list
@@ -91,7 +91,7 @@ def closest_match(value, list):
     return len(list) - 1
 
 
-class SmartIRLight(LightEntity, RestoreEntity):
+class IRsinnLight(LightEntity, RestoreEntity):
     def __init__(self, hass, config, device_data):
         self.hass = hass
         self._unique_id = config.get(CONF_UNIQUE_ID)

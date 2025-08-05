@@ -16,7 +16,7 @@ from .controller import get_controller
 
 _LOGGER = logging.getLogger(__name__)
 
-DEFAULT_NAME = "SmartIR Remote"
+DEFAULT_NAME = "IRsinn Remote"
 DEFAULT_DELAY = 0.5
 
 CONF_UNIQUE_ID = "unique_id"
@@ -54,10 +54,10 @@ async def async_setup_platform(
         _LOGGER.error("The device JSON file is invalid")
         return
 
-    async_add_entities([SmartIRRemote(hass, config, device_data)])
+    async_add_entities([IRsinnRemote(hass, config, device_data)])
 
 
-class SmartIRRemote(RemoteEntity, RestoreEntity):
+class IRsinnRemote(RemoteEntity, RestoreEntity):
     def __init__(self, hass, config, device_data):
         self.hass = hass
         self._unique_id = config.get(CONF_UNIQUE_ID)
@@ -101,7 +101,7 @@ class SmartIRRemote(RemoteEntity, RestoreEntity):
     @property
     def device_info(self):
         return {
-            "identifiers": {("smartir", self._unique_id or self._device_code)},
+            "identifiers": {("irsinn", self._unique_id or self._device_code)},
             "name": self._name,
             "manufacturer": self._manufacturer,
             "model": ", ".join(self._supported_models) if self._supported_models else None,

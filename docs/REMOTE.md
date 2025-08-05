@@ -2,7 +2,7 @@
 
 Example configuration:
 ```yaml
-- platform: smartir
+- platform: irsinn
   name: Living Room IR Remote
   unique_id: lr_remote
   device_code: 1000

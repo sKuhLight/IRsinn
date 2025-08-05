@@ -24,7 +24,7 @@ from .controller import get_controller
 
 _LOGGER = logging.getLogger(__name__)
 
-DEFAULT_NAME = "SmartIR Climate"
+DEFAULT_NAME = "IRsinn Climate"
 DEFAULT_DELAY = 0.5
 
 CONF_UNIQUE_ID = 'unique_id'
@@ -62,7 +62,7 @@ async def async_setup_platform(
     discovery_info: dict | None = None,
 ) -> None:
     """Set up the IR Climate platform."""
-    _LOGGER.debug("Setting up the smartir platform")
+    _LOGGER.debug("Setting up the irsinn platform")
     device_code = config.get(CONF_DEVICE_CODE)
 
     try:
@@ -71,11 +71,11 @@ async def async_setup_platform(
         _LOGGER.error("The device JSON file is invalid")
         return
 
-    async_add_entities([SmartIRClimate(hass, config, device_data)])
+    async_add_entities([IRsinnClimate(hass, config, device_data)])
 
-class SmartIRClimate(ClimateEntity, RestoreEntity):
+class IRsinnClimate(ClimateEntity, RestoreEntity):
     def __init__(self, hass, config, device_data):
-        _LOGGER.debug(f"SmartIRClimate init started for device {config.get(CONF_NAME)} supported models {device_data['supportedModels']}")
+        _LOGGER.debug(f"IRsinnClimate init started for device {config.get(CONF_NAME)} supported models {device_data['supportedModels']}")
         self.hass = hass
         self._unique_id = config.get(CONF_UNIQUE_ID)
         self._name = config.get(CONF_NAME)

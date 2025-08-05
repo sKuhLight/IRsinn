@@ -27,7 +27,7 @@ from .controller import get_controller
 
 _LOGGER = logging.getLogger(__name__)
 
-DEFAULT_NAME = "SmartIR Fan"
+DEFAULT_NAME = "IRsinn Fan"
 DEFAULT_DELAY = 0.5
 
 CONF_UNIQUE_ID = 'unique_id'
@@ -62,9 +62,9 @@ async def async_setup_platform(
         _LOGGER.error("The device JSON file is invalid")
         return
 
-    async_add_entities([SmartIRFan(hass, config, device_data)])
+    async_add_entities([IRsinnFan(hass, config, device_data)])
 
-class SmartIRFan(FanEntity, RestoreEntity):
+class IRsinnFan(FanEntity, RestoreEntity):
     def __init__(self, hass, config, device_data):
         self.hass = hass
         self._unique_id = config.get(CONF_UNIQUE_ID)
