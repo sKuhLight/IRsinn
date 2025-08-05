@@ -13,10 +13,16 @@ import struct
 from typing import Any
 
 import voluptuous as vol
-from homeassistant.const import __version__ as current_ha_version
-from homeassistant.core import HomeAssistant
-import homeassistant.helpers.config_validation as cv
-from homeassistant.helpers.typing import ConfigType
+
+try:  # pragma: no cover - falls back when HA is not installed
+    from homeassistant.const import __version__ as current_ha_version
+    from homeassistant.core import HomeAssistant
+    import homeassistant.helpers.config_validation as cv
+    from homeassistant.helpers.typing import ConfigType
+except Exception:  # pragma: no cover - used only for tests
+    current_ha_version = "0.0.0"
+    HomeAssistant = Any  # type: ignore[misc, assignment]
+    cv = ConfigType = Any  # type: ignore[misc]
 
 _LOGGER = logging.getLogger(__name__)
 

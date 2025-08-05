@@ -4,9 +4,11 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from base64 import b64encode
+import asyncio
 import binascii
 import json
 import logging
+import time
 from typing import Any, Iterable, List
 
 import requests
@@ -99,6 +101,13 @@ class AbstractController(ABC):
         """Send a command."""
         raise NotImplementedError
 
+    async def learn(self) -> str | None:  # pragma: no cover - default implementation
+        """Learn a command from the device.
+
+        Controllers that support learning should override this method.
+        """
+        raise NotImplementedError
+
 
 class BroadlinkController(AbstractController):
     """Controls a Broadlink device."""
@@ -183,6 +192,66 @@ class ZHAController(AbstractController):
         await self.hass.services.async_call(
             "zha", "issue_zigbee_cluster_command", service_data
         )
+
+    async def learn(self, timeout: int = 30) -> str | None:
+        """Learn an IR command via ZHA."""
+
+        async def _read_code() -> str | None:
+            read_data = {
+                "cluster_type": "in",
+                "endpoint_id": 1,
+                "ieee": self._controller_data,
+                "cluster_id": 57348,
+                "attribute": 0,
+            }
+            try:
+                resp = await self.hass.services.async_call(
+                    "zha",
+                    "get_zigbee_cluster_attribute",
+                    read_data,
+                    blocking=True,
+                    return_response=True,
+                )
+            except Exception as err:  # pragma: no cover - depends on HA
+                _LOGGER.debug("Failed to read attribute: %s", err)
+                return None
+            _LOGGER.debug("Attribute read response: %s", resp)
+            if isinstance(resp, dict):
+                if "value" in resp:
+                    return resp.get("value")
+                val = resp.get("0")
+                if isinstance(val, dict):
+                    return val.get("value")
+                return val
+            return None
+
+        initial_code = await _read_code()
+        _LOGGER.debug("Initial learned code: %s", initial_code)
+
+        learn_data = {
+            "cluster_type": "in",
+            "endpoint_id": 1,
+            "command": 1,
+            "ieee": self._controller_data,
+            "command_type": "server",
+            "params": {"on_off": True},
+            "cluster_id": 57348,
+        }
+        await self.hass.services.async_call(
+            "zha", "issue_zigbee_cluster_command", learn_data
+        )
+        _LOGGER.debug("Sent learn mode command")
+
+        end = time.monotonic() + timeout
+        while time.monotonic() < end:
+            await asyncio.sleep(1)
+            code = await _read_code()
+            if code and code != initial_code:
+                _LOGGER.debug("Received new IR code: %s", code)
+                return code
+
+        _LOGGER.debug("Timed out waiting for learned IR code")
+        return None
 
 
 class MQTTController(AbstractController):
