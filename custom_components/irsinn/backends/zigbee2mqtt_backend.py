@@ -14,5 +14,10 @@ class Zigbee2MQTTBackend(IRBackend):
             "mqtt", "publish", {"topic": topic, "payload": command}
         )
 
+    @classmethod
+    async def async_controller_options(cls, hass):  # pragma: no cover - stub
+        """Return discovered MQTT topics, if any."""
+        return {}
+
 
 register_backend("zigbee2mqtt", Zigbee2MQTTBackend)

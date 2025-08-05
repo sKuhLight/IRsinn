@@ -26,6 +26,16 @@ class IRBackend(ABC):
         """Learn a command from the backend."""
         return None
 
+    @classmethod
+    async def async_controller_options(cls, hass: HomeAssistant) -> dict[str, str]:
+        """Return available controller options for this backend.
+
+        The returned mapping maps a controller identifier to a human readable name
+        that will be presented in the config flow. Backends can override this
+        method to provide discovery of IR blaster devices.
+        """
+        return {}
+
 
 def register_backend(name: str, backend: Type[IRBackend]) -> None:
     """Register a backend implementation."""

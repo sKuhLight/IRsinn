@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from homeassistant.helpers.device_registry import async_get as async_get_dr
+
 from . import IRBackend, register_backend
 
 ZHA_CLUSTER_ID = 0xE004  # cluster used for IR commands
@@ -24,6 +26,17 @@ class ZhaBackend(IRBackend):
         await self.hass.services.async_call(
             "zha", "issue_zigbee_cluster_command", service_data
         )
+
+    @classmethod
+    async def async_controller_options(cls, hass):
+        """Return available ZHA devices for selection."""
+        registry = async_get_dr(hass)
+        controllers: dict[str, str] = {}
+        for device in registry.devices.values():
+            for domain, ident in device.identifiers:
+                if domain == "zha":
+                    controllers[ident] = device.name or ident
+        return controllers
 
 
 register_backend("zha", ZhaBackend)

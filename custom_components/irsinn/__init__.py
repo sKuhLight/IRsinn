@@ -37,6 +37,9 @@ COMPONENT_ABS_DIR = os.path.dirname(
 
 CONF_CHECK_UPDATES = 'check_updates'
 CONF_UPDATE_BRANCH = 'update_branch'
+CONF_ENTITY_TYPE = 'entity_type'
+
+PLATFORMS = ["remote", "climate", "fan", "light", "media_player"]
 
 CONFIG_SCHEMA = vol.Schema(
     {
@@ -140,12 +143,14 @@ async def async_setup_entry(hass: HomeAssistant, entry) -> bool:
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN].setdefault("storage", StorageManager(hass))
     hass.data[DOMAIN].setdefault("entities", {})
-    await hass.config_entries.async_forward_entry_setups(entry, ["remote"])
+    platform = entry.data.get(CONF_ENTITY_TYPE, "remote")
+    await hass.config_entries.async_forward_entry_setups(entry, [platform])
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry) -> bool:
-    return await hass.config_entries.async_unload_platforms(entry, ["remote"])
+    platform = entry.data.get(CONF_ENTITY_TYPE, "remote")
+    return await hass.config_entries.async_unload_platforms(entry, [platform])
 
 
 async def async_get_device_config(domain: str, device_code: int) -> dict[str, Any]:
