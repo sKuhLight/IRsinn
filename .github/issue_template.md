@@ -21,9 +21,9 @@ Issues not containing the minimum requirements will be closed:
 
 **Home Assistant version**
 
-**SmartIR version**
+**IRsinn version**
 
-**SmartIR configuration**
+**IRsinn configuration**
 
 ```yaml
 
