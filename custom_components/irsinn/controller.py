@@ -262,10 +262,12 @@ class ZHAController(AbstractController):
                     "command": 0,
                     "ieee": self._controller_data,
                     "command_type": "server",
-                    "params": {"data": {"study": 1}},
+                    # the quirk expects a JSON string payload
+                    "params": {"data": json.dumps({"study": 1})},
                     "cluster_id": 57348,
                 }
                 try:
+                    _LOGGER.debug("Exiting learn mode")
                     await self.hass.services.async_call(
                         "zha", "issue_zigbee_cluster_command", exit_data
                     )
@@ -276,6 +278,7 @@ class ZHAController(AbstractController):
         _LOGGER.debug("Timed out waiting for learned IR code")
         # make a best effort to exit learn mode
         try:
+            _LOGGER.debug("Exiting learn mode after timeout")
             await self.hass.services.async_call(
                 "zha",
                 "issue_zigbee_cluster_command",
@@ -285,7 +288,7 @@ class ZHAController(AbstractController):
                     "command": 0,
                     "ieee": self._controller_data,
                     "command_type": "server",
-                    "params": {"data": {"study": 1}},
+                    "params": {"data": json.dumps({"study": 1})},
                     "cluster_id": 57348,
                 },
             )
