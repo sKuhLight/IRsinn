@@ -1,17 +1,41 @@
 import asyncio
 import logging
+from typing import Any
 
 import voluptuous as vol
 
-from homeassistant.components.remote import RemoteEntity, PLATFORM_SCHEMA, RemoteEntityFeature
-from homeassistant.const import CONF_NAME
-import homeassistant.helpers.config_validation as cv
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.restore_state import RestoreEntity
-from homeassistant.helpers.typing import ConfigType
+try:  # pragma: no cover - allows tests without Home Assistant
+    from homeassistant.components.remote import (
+        RemoteEntity,
+        PLATFORM_SCHEMA,
+        RemoteEntityFeature,
+    )
+    from homeassistant.const import CONF_NAME
+    import homeassistant.helpers.config_validation as cv
+    from homeassistant.core import HomeAssistant
+    from homeassistant.helpers.entity_platform import AddEntitiesCallback
+    from homeassistant.helpers.restore_state import RestoreEntity
+    from homeassistant.helpers.typing import ConfigType
+except Exception:  # pragma: no cover - Home Assistant not available
+    RemoteEntity = type("RemoteEntity", (object,), {})  # type: ignore
+    RestoreEntity = type("RestoreEntity", (object,), {})  # type: ignore
 
-from . import async_get_device_config
+    class RemoteEntityFeature:  # type: ignore
+        LEARN_COMMAND = 0
+        DELETE_COMMAND = 0
+
+    PLATFORM_SCHEMA = vol.Schema({})
+    CONF_NAME = "name"
+
+    class _CV:  # minimal stand-ins for Home Assistant validators
+        string = str
+        positive_int = int
+        positive_float = float
+
+    cv = _CV()
+    HomeAssistant = AddEntitiesCallback = ConfigType = Any
+
+from . import DOMAIN, async_get_device_config
 from .controller import get_controller
 
 _LOGGER = logging.getLogger(__name__)
@@ -82,6 +106,11 @@ class IRsinnRemote(RemoteEntity, RestoreEntity):
             self._delay,
         )
 
+    async def async_added_to_hass(self) -> None:
+        """Register entity for domain services."""
+        await super().async_added_to_hass()
+        self.hass.data.setdefault(DOMAIN, {})[self.entity_id] = self
+
     @property
     def name(self):
         return self._name
@@ -142,10 +171,26 @@ class IRsinnRemote(RemoteEntity, RestoreEntity):
                 await asyncio.sleep(self._delay)
 
     async def async_learn_command(self, **kwargs):
-        command = kwargs.get("command")
-        command_data = kwargs.get("command_data", [])
-        if command:
-            self._commands[command] = command_data
+        command = kwargs.get("command") or kwargs.get("key")
+        _LOGGER.debug("Learn command requested: %s", command)
+        if not command:
+            _LOGGER.error("No command name provided for learn_command")
+            return
+
+        try:
+            learned = await self._controller.learn()
+        except NotImplementedError:
+            _LOGGER.error("Controller does not support learning")
+            return
+        except Exception as err:  # pragma: no cover - depends on HA
+            _LOGGER.error("Error while learning command %s: %s", command, err)
+            return
+
+        if learned:
+            self._commands[command] = [learned]
+            _LOGGER.debug("Learned command %s: %s", command, learned)
+        else:
+            _LOGGER.warning("No IR code learned for %s", command)
 
     async def async_delete_command(self, **kwargs):
         command = kwargs.get("command")
